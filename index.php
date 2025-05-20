@@ -11,15 +11,24 @@ require 'db.php'; // Assurez-vous que ce fichier configure correctement $pdo
 
 $error = null; // Initialisation de la variable d'erreur
 
+// Check for "remember me" cookie on page load
+$remembered_username = '';
+if (isset($_COOKIE['remember_username'])) {
+    $remembered_username = $_COOKIE['remember_username'];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'];
     $password = $_POST['password'];
+    $remember_me = isset($_POST['remember']); // Check if "remember me" checkbox is checked
 
     // 1. Vérification pour l'administrateur
     $stmt = $pdo->prepare("SELECT * FROM admin WHERE username = ?");
     $stmt->execute([$username]);
     $admin = $stmt->fetch();
-    // $admin && password_verify($password, $admin['password']
+    
+    // For a real application, you should use password_verify($password, $admin['password'])
+    // instead of direct comparison for hashed passwords.
     if ($admin && $password === $admin['password']) {
         // L'administrateur est authentifié avec succès
         session_regenerate_id(true); // Régénère l'ID de session pour prévenir la fixation de session
@@ -27,6 +36,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['admin'] = true;
         $_SESSION['user_id'] = $admin['id']; // Stocker l'ID de l'admin, si vous avez une colonne 'id'
         $_SESSION['name'] = $admin['username']; // Utiliser le nom d'utilisateur de la base de données
+
+        // Set "remember me" cookie if checked
+        if ($remember_me) {
+            // Cookie valid for 30 days (60 seconds * 60 minutes * 24 hours * 30 days)
+            setcookie('remember_username', $username, time() + (86400 * 30), "/");
+        } else {
+            // If not checked, remove the cookie if it exists
+            setcookie('remember_username', '', time() - 3600, "/"); // Set expiration to past
+        }
         
         header('Location: dashboard_admin.php');
         exit();
@@ -37,6 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute([$username]);
     $user = $stmt->fetch();
 
+    // For a real application, you should use password_verify($password, $user['password'])
+    // instead of direct comparison for hashed passwords.
     if ($user && $password === $user['password']) {
         // L'utilisateur standard est authentifié avec succès
         session_regenerate_id(true); // Régénère l'ID de session
@@ -44,6 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user'] = true; // Indicateur générique pour utilisateur connecté
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['name'] = $user['username']; // Utiliser le nom d'utilisateur de la base de données
+
+        // Set "remember me" cookie if checked
+        if ($remember_me) {
+            setcookie('remember_username', $username, time() + (86400 * 30), "/");
+        } else {
+            setcookie('remember_username', '', time() - 3600, "/");
+        }
         
         header('Location: dashboard_user.php');
         exit();
@@ -60,9 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - Mon Site</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- 
 </head>
-   
+<body>
 <style>
         :root {
             --primary-color: #4CAF50;
@@ -109,7 +135,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .navbar {
             display: flex;
-
             justify-content: space-between;
             align-items: center;
             max-width: 1200px;
@@ -349,7 +374,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             50% { transform: translateY(-10px); }
         }
 </style>
-<body>
     <header>
         <nav class="navbar">
             <a href="index.php" class="logo">
@@ -382,7 +406,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <form method="POST" class="login-form">
                     <div class="form-group">
                         <i class="fas fa-user"></i>
-                        <input type="text" class="form-control" name="username" required placeholder="Nom d'utilisateur">
+                        <input type="text" class="form-control" name="username" required placeholder="Nom d'utilisateur" value="<?= htmlspecialchars($remembered_username) ?>">
                     </div>
                     
                     <div class="form-group">
@@ -392,10 +416,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     <div class="remember-forgot">
                         <label class="remember-me">
-                            <input type="checkbox" name="remember">
+                            <input type="checkbox" name="remember" <?= !empty($remembered_username) ? 'checked' : '' ?>>
                             Se souvenir de moi
                         </label>
-                    </div>
+                        </div>
                     
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-sign-in-alt"></i>
@@ -403,8 +427,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
                 </form>
                 
-
-            </div>
+                </div>
         </div>
     </main>
 
@@ -423,10 +446,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </footer>
 </body>
 </html>
-
-
-
-
-
-
-<!-- *********************************************************** -->
