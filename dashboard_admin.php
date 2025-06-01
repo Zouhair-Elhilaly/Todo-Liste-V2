@@ -35,8 +35,9 @@ $count = $stmt->fetch();
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
         
-        body {
-            background-color: var(--light-gray);
+        body {           
+            background-image: url(image/admin.jpg);
+            background-size: contain;
             color: var(--text-color);
             display: flex;
             flex-direction: column;

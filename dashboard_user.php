@@ -1,143 +1,17 @@
 <?php
 session_start();
 require 'db.php';
-if (!isset($_SESSION['user_id'])) {
-    header('Location: index.php');
-    exit();
-}
-
-
-// start generation quiz 
-
-
-// session_start();
-require 'db.php';
-require 'functions/ai_functions.php'; // Ajoutez cette ligne
+//require_once 'functions/ai_functions.php'; // Keep this if you use other AI functions elsewhere
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit();
 }
 
-// Traitement de la génération de quiz
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_quiz'])) {
-    $module_id = $_POST['module_id'];
-    $user_id = $_SESSION['user_id'];
-    $quiz_type = $_POST['quiz_type'];
-    $question_count = isset($_POST['question_count']) ? (int)$_POST['question_count'] : 5;
-
-    try {
-        // Vérification du module
-        $stmt = $pdo->prepare("SELECT id, name FROM module WHERE id = ? AND user_id = ?");
-        $stmt->execute([$module_id, $user_id]);
-        $module = $stmt->fetch();
-        
-        if (!$module) {
-            throw new Exception("Module non trouvé ou non autorisé");
-        }
-
-        // Récupération des notes
-        $stmt = $pdo->prepare("SELECT content FROM note WHERE module_id = ?");
-        $stmt->execute([$module_id]);
-        $notes = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        if (empty($notes)) {
-            throw new Exception("Aucune note trouvée pour ce module");
-        }
-        
-        $module_content = implode("\n", $notes);
-        
-        // Génération du quiz
-        // $quiz_data = generate_quiz_with_ai($module_content, $question_count, $quiz_type);
-        
-        // Enregistrement en base de données
-        $pdo->beginTransaction();
-        
-        // Insertion du quiz
-        $stmt = $pdo->prepare("INSERT INTO quizzes (module_id, user_id, title, quiz_type, generated_at) 
-                              VALUES (?, ?, ?, ?, NOW())");
-        $title = "Quiz {$quiz_type} sur " . $module['name'];
-        $stmt->execute([$module_id, $user_id, $title, $quiz_type]);
-        $quiz_id = $pdo->lastInsertId();
-        
-        // Insertion des questions
-        $stmt = $pdo->prepare("INSERT INTO quiz_questions 
-                              (quiz_id, question, correct_answer, options) 
-                              VALUES (?, ?, ?, ?)");
-        
-        foreach ($quiz_data['questions'] as $question) {
-            $options = ($quiz_type !== 'texte_libre') ? json_encode($question['options']) : null;
-            $stmt->execute([
-                $quiz_id,
-                $question['question'],
-                $question['correct_answer'],
-                $options
-            ]);
-        }
-        
-        $pdo->commit();
-        
-        $_SESSION['success'] = "Quiz généré avec succès!";
-        header("Location: view_quiz.php?id=" . $quiz_id);
-        exit();
-        
-    } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        $_SESSION['error'] = "Erreur: " . $e->getMessage();
-        header("Location: dashboard_user.php");
-        exit();
-    }
-}
-
-// Le reste de votre code reste inchangé...
-
-
-// ********************* end generation quiz *********************
-// Traitement de la génération de quiz
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_quiz'])) {
-    $module_id = $_POST['module_id'];
-    $user_id = $_SESSION['user_id'];
-    $quiz_type = $_POST['quiz_type']; // Récupère le type de quiz
-    $question_count = isset($_POST['question_count']) ? (int)$_POST['question_count'] : 5; // Récupère le nombre de questions
-    
-    try {
-        // Vérifier que le module appartient bien à l'utilisateur
-        $stmt = $pdo->prepare("SELECT id FROM module WHERE id = ? AND user_id = ?");
-        $stmt->execute([$module_id, $user_id]);
-        if (!$stmt->fetch()) {
-            throw new Exception("Module non trouvé ou non autorisé");
-        }
-
-        // Récupérer les notes du module
-        $stmt = $pdo->prepare("SELECT content FROM note WHERE module_id = ?");
-        $stmt->execute([$module_id]);
-        $notes = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        if (empty($notes)) {
-            throw new Exception("Aucune note trouvée pour ce module");
-        }
-        
-        $module_content = implode("\n", $notes);
-        
-        // Appel à l'API IA avec les paramètres
-        $quiz_data = generate_quiz_with_ai($module_content, $question_count, $quiz_type);
-        
-        if (!$quiz_data) {
-            throw new Exception("Échec de la génération du quiz");
-        }
-
-        // Le reste du code reste inchangé...
-    } catch (Exception $e) {
-        
-    }
-}
 // Traitement de la suppression du module
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_module'])) {
     $module_id = $_POST['module_id'];
     $user_id = $_SESSION['user_id'];
-    
     try {
         // Vérifier que le module appartient bien à l'utilisateur
         $stmt = $pdo->prepare("SELECT id FROM module WHERE id = ? AND user_id = ?");
@@ -145,24 +19,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_module'])) {
         if (!$stmt->fetch()) {
             throw new Exception("Module non trouvé ou non autorisé");
         }
+    
 
-        // Démarrer une transaction
+           // Démarrer une transaction
         $pdo->beginTransaction();
         
         // Supprimer les notes liées au module
         $stmt = $pdo->prepare("DELETE FROM note WHERE module_id = ?");
         $stmt->execute([$module_id]);
-        
-        // Supprimer les questions des quiz liés au module
-        $stmt = $pdo->prepare("DELETE qq FROM quiz_questions qq 
-                              INNER JOIN quizzes q ON qq.quiz_id = q.id 
-                              WHERE q.module_id = ?");
-        $stmt->execute([$module_id]);
-        
-        // Supprimer les quiz liés au module
-        $stmt = $pdo->prepare("DELETE FROM quizzes WHERE module_id = ?");
-        $stmt->execute([$module_id]);
-        
+
         // Supprimer le module
         $stmt = $pdo->prepare("DELETE FROM module WHERE id = ? AND user_id = ?");
         $stmt->execute([$module_id, $user_id]);
@@ -189,6 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_module'])) {
 $stmt = $pdo->prepare("SELECT m.id, m.name FROM module m WHERE m.user_id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $modules = $stmt->fetchAll();
+
+ 
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -197,7 +64,7 @@ $modules = $stmt->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Utilisateur</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
+<style>
         /* Votre CSS existant reste inchangé */
         :root {
             --primary-color: #4CAF50;
@@ -220,7 +87,8 @@ $modules = $stmt->fetchAll();
         }
 
         body {
-            background-color: var(--light-gray);
+            background-image: url(image/notepad.jpg);
+            background-size: cover;
             color: var(--text-color);
             line-height: 1.6;
             padding: 0;
@@ -284,9 +152,8 @@ $modules = $stmt->fetchAll();
             background-color: var(--secondary-color);
             color: var(--white);
         }
-        .btn-secondary .two {
-            background-color: red;
-            color: var(--white);
+        .btn-secondary.two { /* Specific class for logout button */
+            background-color: #f44336; /* Red color for logout */
         }
 
         .btn-secondary:hover {
@@ -393,15 +260,15 @@ $modules = $stmt->fetchAll();
             color: var(--white);
         }
 
-        /* Styles pour le quiz generator */
-        .quiz-generator {
+        /* Styles pour le chatbot / quiz generator */
+        .chatbot-container {
             position: fixed;
             bottom: 30px;
             right: 30px;
             z-index: 100;
         }
 
-        .quiz-btn {
+        .chatbot-btn {
             background-color: #9c27b0;
             color: white;
             width: 60px;
@@ -417,12 +284,12 @@ $modules = $stmt->fetchAll();
             border: none;
         }
 
-        .quiz-btn:hover {
+        .chatbot-btn:hover {
             transform: scale(1.1) rotate(10deg);
             box-shadow: 0 8px 25px rgba(156, 39, 176, 0.4);
         }
 
-        .quiz-modal, .delete-modal {
+        .chatbot-modal, .delete-modal {
             display: none;
             position: fixed;
             top: 0;
@@ -435,7 +302,7 @@ $modules = $stmt->fetchAll();
             align-items: center;
         }
 
-        .quiz-modal-content, .delete-modal-content {
+        .chatbot-modal-content, .delete-modal-content {
             background-color: white;
             padding: 2rem;
             border-radius: 10px;
@@ -443,6 +310,9 @@ $modules = $stmt->fetchAll();
             max-width: 500px;
             animation: modalFadeIn 0.3s ease-out;
             position: relative;
+            display: flex; /* Flexbox for internal layout */
+            flex-direction: column;
+            max-height: 80vh; /* Limit height for scrollable content */
         }
 
         .delete-modal-content {
@@ -454,7 +324,7 @@ $modules = $stmt->fetchAll();
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .quiz-modal h3, .delete-modal h3 {
+        .chatbot-modal h3, .delete-modal h3 {
             margin-bottom: 1.5rem;
             color: var(--primary-dark);
             display: flex;
@@ -466,7 +336,7 @@ $modules = $stmt->fetchAll();
             color: var(--danger-dark);
         }
 
-        .quiz-modal select, .quiz-modal button, .quiz-modal input,
+        .chatbot-modal select, .chatbot-modal button, .chatbot-modal input,
         .delete-modal button {
             width: 100%;
             padding: 12px;
@@ -475,13 +345,58 @@ $modules = $stmt->fetchAll();
             border: 1px solid #ddd;
         }
 
-        .quiz-modal button {
+        /* Chatbot specific styles */
+        #chatbox {
+            flex-grow: 1; /* Allows chatbox to take available space */
+            border: 1px solid #eee;
+            padding: 15px;
+            margin-bottom: 15px;
+            overflow-y: auto; /* Enable scrolling for chat history */
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 15px;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: #e0f2f7; /* Light blue */
+            align-self: flex-end;
+            text-align: right;
+        }
+
+        .bot-message {
+            background-color: #e8f5e9; /* Light green */
+            align-self: flex-start;
+            text-align: left;
+        }
+
+        #userInput {
+            margin-bottom: 10px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        #sendChatBtn {
             background-color: var(--primary-color);
             color: white;
             border: none;
             cursor: pointer;
             transition: var(--transition);
         }
+
+        #sendChatBtn:hover {
+            background-color: var(--primary-dark);
+        }
+
 
         .delete-modal button.confirm-delete {
             background-color: var(--danger-color);
@@ -506,10 +421,6 @@ $modules = $stmt->fetchAll();
 
         .delete-modal button.cancel-delete:hover {
             background-color: #ccc;
-        }
-
-        .quiz-modal button:hover {
-            background-color: var(--primary-dark);
         }
 
         .close-modal {
@@ -612,134 +523,7 @@ $modules = $stmt->fetchAll();
         </div>
     </div>
 
-    <!-- Bouton flottant pour générer un quiz -->
-    <div class="quiz-generator">
-        <button class="quiz-btn" id="quizGeneratorBtn">
-            <i class="fas fa-robot"></i>
-        </button>
-    </div>
-
-    <?php
-// session_start();
-require 'db.php';
-require_once 'functions/ai_functions.php';
-
-if (!isset($_SESSION['user_id'])) {
-    header('Location: index.php');
-    exit();
-}
-
-// Traitement de la suppression du module
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_module'])) {
-    $module_id = $_POST['module_id'];
-    $user_id = $_SESSION['user_id'];
-    
-    try {
-        // Vérifier que le module appartient bien à l'utilisateur
-        $stmt = $pdo->prepare("SELECT id FROM module WHERE id = ? AND user_id = ?");
-        $stmt->execute([$module_id, $user_id]);
-        if (!$stmt->fetch()) {
-            throw new Exception("Module non trouvé ou non autorisé");
-        }
-
-        // Démarrer une transaction
-        $pdo->beginTransaction();
-        
-        // Supprimer les notes liées au module
-        $stmt = $pdo->prepare("DELETE FROM note WHERE module_id = ?");
-        $stmt->execute([$module_id]);
-        
-        // Supprimer les questions des quiz liés au module
-        $stmt = $pdo->prepare("DELETE qq FROM quiz_questions qq 
-                              INNER JOIN quizzes q ON qq.quiz_id = q.id 
-                              WHERE q.module_id = ?");
-        $stmt->execute([$module_id]);
-        
-        // Supprimer les quiz liés au module
-        $stmt = $pdo->prepare("DELETE FROM quizzes WHERE module_id = ?");
-        $stmt->execute([$module_id]);
-        
-        // Supprimer le module
-        $stmt = $pdo->prepare("DELETE FROM module WHERE id = ? AND user_id = ?");
-        $stmt->execute([$module_id, $user_id]);
-        
-        // Valider la transaction
-        $pdo->commit();
-        
-        $_SESSION['success'] = "Module supprimé avec succès!";
-        header("Location: dashboard_user.php");
-        exit();
-        
-    } catch (Exception $e) {
-        // Annuler en cas d'erreur
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        $_SESSION['error'] = "Erreur: " . $e->getMessage();
-        header("Location: dashboard_user.php");
-        exit();
-    }
-}
-
-// Récupération des modules
-$stmt = $pdo->prepare("SELECT m.id, m.name FROM module m WHERE m.user_id = ?");
-$stmt->execute([$_SESSION['user_id']]);
-$modules = $stmt->fetchAll();
-?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <!-- [VOTRE CODE HTML EXISTANT] -->
-</head>
-<body>
-    <!-- [VOTRE CODE HTML EXISTANT] -->
-
-    <script>
-        // [VOTRE CODE JAVASCRIPT EXISTANT]
-    </script>
-</body>
-</html>
-
-    <!-- Modal pour la génération de quiz -->
-    <div class="quiz-modal" id="quizModal">
-        <div class="quiz-modal-content">
-            <span class="close-modal" id="closeModal">&times;</span>
-            <h3><i class="fas fa-magic"></i> Générer un Quiz IA</h3>
-            
-            <form method="POST" id="quizForm">
-                <div class="form-group">
-                    <label for="moduleSelect">Sélectionnez un module</label>
-                    <select name="module_id" id="moduleSelect" required>
-                        <option value="">-- Choisir un module --</option>
-                        <?php foreach ($modules as $module): ?>
-                            <option value="<?= $module['id'] ?>"><?= htmlspecialchars($module['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <input type="hidden" name="module_name" id="moduleName">
-                </div>
-                
-                <div class="form-group">
-                    <label for="quizType">Type de quiz</label>
-                    <select name="quiz_type" id="quizType">
-                        <option value="qcm">QCM</option>
-                        <option value="vrai_faux">Vrai/Faux</option>
-                        <option value="texte_libre">Réponse libre</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="questionCount">Nombre de questions</label>
-                    <input type="number" name="question_count" id="questionCount"  value="5">
-                </div>
-                
-                <button type="submit" name="generate_quiz" class="btn btn-primary">
-                    <i class="fas fa-cogs"></i> Générer le Quiz
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- *************       Modal pour la confirmation de suppression ************************* -->
+    <!-- start supresion des modules -->
     <div class="delete-modal" id="deleteModal">
         <div class="delete-modal-content">
             <span class="close-modal" id="closeDeleteModal">&times;</span>
@@ -757,68 +541,114 @@ $modules = $stmt->fetchAll();
             </form>
         </div>
     </div>
-
+<!-- strat html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <title>ChatBot</title>
+    <link rel="stylesheet" href="style1.css" />
+  </head>
+  <body>
+    <div id="chatbot-icon"><i class="fa-solid fa-brain"></i></div>
+    <div id="chatbot-container" class="hidden">
+      <div id="chatbot-header">
+        <span>Chat with ai </span>
+        <button id="close-btn">&times;</button>
+      </div>
+      <div id="chatbot-body">
+        <div id="chatbot-messages"></div>
+      </div>
+      <div id="chatbot-input-container">
+        <input type="text" id="chatbot-input" placeholder="Type a message" autofocus />
+        <button id="send-btn">Send</button>
+      </div>
+    </div>
+    <!-- end html start js -->
     <script>
-        
-        // Gestion du modal quiz
-        const quizBtn = document.getElementById('quizGeneratorBtn');
-        const quizModal = document.getElementById('quizModal');
-        const closeQuizBtn = document.getElementById('closeModal');
-        const moduleSelect = document.getElementById('moduleSelect');
-        const moduleNameInput = document.getElementById('moduleName');
-        
-        quizBtn.addEventListener('click', () => {
-            quizModal.style.display = 'flex';
-        });
-        
-        closeQuizBtn.addEventListener('click', () => {
-            quizModal.style.display = 'none';
-        });
-        
-        // Gestion du modal de suppression
-        const deleteModal = document.getElementById('deleteModal');
-        const closeDeleteBtn = document.getElementById('closeDeleteModal');
-        const cancelDeleteBtn = document.getElementById('cancelDelete');
-        const moduleToDeleteSpan = document.getElementById('moduleToDelete');
-        const deleteModuleIdInput = document.getElementById('deleteModuleId');
-        
-        function openDeleteModal(moduleId, moduleName) {
-            moduleToDeleteSpan.textContent = moduleName;
-            deleteModuleIdInput.value = moduleId;
-            deleteModal.style.display = 'flex';
-        }
-        
-        closeDeleteBtn.addEventListener('click', () => {
-            deleteModal.style.display = 'none';
-        });
-        
-        cancelDeleteBtn.addEventListener('click', () => {
-            deleteModal.style.display = 'none';
-        });
-        
-        window.addEventListener('click', (e) => {
-            if (e.target === quizModal) {
-                quizModal.style.display = 'none';
-            }
-            if (e.target === deleteModal) {
-                deleteModal.style.display = 'none';
-            }
-        });
-        
-        // Mettre à jour le nom du module caché quand la sélection change
-        moduleSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            moduleNameInput.value = selectedOption.text;
-        });
-        
-        // Animation du bouton
-        quizBtn.addEventListener('mouseenter', () => {
-            quizBtn.style.transform = 'scale(1.1) rotate(10deg)';
-        });
-        
-        quizBtn.addEventListener('mouseleave', () => {
-            quizBtn.style.transform = '';
-        });
+        document.addEventListener("DOMContentLoaded", function () {
+  const chatbotContainer = document.getElementById("chatbot-container");
+  const clostBtn = document.getElementById("close-btn");
+  const sendBtn = document.getElementById("send-btn");
+  const chatBotInput = document.getElementById("chatbot-input");
+  const chatbotMessages = document.getElementById("chatbot-messages");
+  const chatbotIcon = document.getElementById("chatbot-icon");
+
+  chatbotIcon.addEventListener("click", () => {
+    chatbotContainer.classList.remove("hidden");
+    chatbotIcon.style.display = "none";
+  });
+  clostBtn.addEventListener("click", () => {
+    chatbotContainer.classList.add("hidden");
+    chatbotIcon.style.display = "flex";
+  });
+
+  sendBtn.addEventListener("click", sendMessage);
+
+  chatBotInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage();
+  });
+});
+
+function sendMessage() {
+  const inputField = document.getElementById("chatbot-input");
+  const userMessage = inputField.value.trim();
+
+  if (userMessage) {
+    appendMessage("user", userMessage);
+    inputField.value = ""; // Effacer l'input après envoi
+    getBotResponse(userMessage);
+  }
+}
+
+
+function appendMessage(sender, message) {
+  const messageContainer = document.getElementById("chatbot-messages");
+  const messageElement = document.createElement("div");
+  messageElement.classList.add("message", sender);
+  messageElement.textContent = message;
+  messageContainer.appendChild(messageElement);
+  messageContainer.scrollTop = messageContainer.scrollHeight;
+}
+
+async function getBotResponse(userMessage) {
+  const API_KEY = "AIzaSyCw7Phve7Gu42MaJK29uHj41TgYBpkce5c";  // create API key
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: userMessage }],
+          },
+        ],
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!data.candidates || !data.candidates.length) {
+      throw new Error("No response from Gemini API");
+    }
+
+    const botMessage = data.candidates[0].content.parts[0].text;
+    appendMessage("bot", botMessage);
+  } catch (error) {
+    console.error("Error:", error);
+    appendMessage(
+      "bot",
+      "Sorry, I'm having trouble responding. Please try again."
+    );
+  }
+}
     </script>
+  </body>
+</html>
 </body>
 </html>
+

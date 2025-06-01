@@ -405,7 +405,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?= $error ?>
                     </div>
                 <?php endif; ?>
-
+<!-- start form login -->
                 <form method="POST" class="login-form">
                     <div class="form-group">
                         <i class="fas fa-user"></i>
