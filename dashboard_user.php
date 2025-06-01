@@ -614,7 +614,7 @@ function appendMessage(sender, message) {
 }
 
 async function getBotResponse(userMessage) {
-  const API_KEY = "AIzaSyCw7Phve7Gu42MaJK29uHj41TgYBpkce5c";  // create API key
+  const API_KEY = "hna dir api";  // create API key
   const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 
   try {
