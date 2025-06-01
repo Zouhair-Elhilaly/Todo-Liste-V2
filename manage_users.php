@@ -9,7 +9,8 @@ if (!isset($_SESSION['admin'])) {
 // Ajout d'utilisateur
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
     $username = $_POST['username'];
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    // $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $password = $_POST['password'];
     $stmt = $pdo->prepare("INSERT INTO user (username, password) VALUES (?, ?)");
     $stmt->execute([$username, $password]);
 }
@@ -73,41 +74,52 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
         .admin-container {
             display: flex;
             min-height: 100vh;
+            flex-direction: column;
         }
         
         /* Sidebar */
         .sidebar {
-            width: 250px;
+            width: 100%;
             background-color: var(--primary-dark);
             color: white;
-            padding: 20px 0;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            padding: 15px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
         .sidebar-header {
-            padding: 0 20px 20px;
+            padding: 0 15px 15px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
         .sidebar-header h2 {
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 1.2rem;
         }
         
         .sidebar-menu {
             list-style: none;
+            display: flex;
+            overflow-x: auto;
+            padding: 0 10px;
+        }
+        
+        .sidebar-menu li {
+            flex-shrink: 0;
         }
         
         .sidebar-menu li a {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 20px;
+            gap: 8px;
+            padding: 10px 15px;
             color: white;
             text-decoration: none;
             transition: all 0.3s;
+            font-size: 0.9rem;
+            white-space: nowrap;
         }
         
         .sidebar-menu li a:hover, .sidebar-menu li a.active {
@@ -117,15 +129,15 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
         /* Main Content */
         .main-content {
             flex: 1;
-            padding: 30px;
+            padding: 20px;
         }
         
         .header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
             border-bottom: 1px solid var(--border-color);
         }
         
@@ -133,49 +145,53 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
             color: var(--primary-dark);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            font-size: 1.3rem;
         }
         
         .user-actions {
             display: flex;
             gap: 10px;
+            align-items: center;
+            font-size: 0.9rem;
         }
         
         .card {
             background-color: var(--white);
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            padding: 25px;
-            margin-bottom: 30px;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            padding: 15px;
+            margin-bottom: 20px;
         }
         
         .card-title {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--primary-dark);
-            margin-bottom: 20px;
-            padding-bottom: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         
         .form-row {
             display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 12px;
         }
         
         .form-control {
             width: 100%;
-            padding: 10px 15px;
+            padding: 8px 12px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            font-size: 1rem;
+            font-size: 0.9rem;
             transition: all 0.3s;
         }
         
@@ -186,16 +202,16 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
         }
         
         .btn {
-            padding: 10px 20px;
+            padding: 8px 15px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 500;
             transition: all 0.3s;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
         
         .btn-primary {
@@ -205,7 +221,6 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
         
         .btn-primary:hover {
             background-color: var(--primary-dark);
-            transform: translateY(-2px);
         }
         
         .btn-danger {
@@ -215,7 +230,6 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
         
         .btn-danger:hover {
             background-color: #d32f2f;
-            transform: translateY(-2px);
         }
         
         .btn-warning {
@@ -225,28 +239,30 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
         
         .btn-warning:hover {
             background-color: #ffb300;
-            transform: translateY(-2px);
         }
         
         .btn-sm {
-            padding: 5px 10px;
-            font-size: 0.9rem;
+            padding: 4px 8px;
+            font-size: 0.8rem;
         }
         
         .table-responsive {
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 15px;
+            min-width: 600px;
         }
         
         th, td {
-            padding: 12px 15px;
+            padding: 10px 12px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
         }
         
         th {
@@ -265,20 +281,24 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
         
         .action-buttons {
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            flex-wrap: wrap;
         }
         
         .edit-form {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
+            flex-wrap: wrap;
         }
         
         .edit-input {
             flex: 1;
-            padding: 6px 10px;
+            min-width: 150px;
+            padding: 5px 8px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
+            font-size: 0.9rem;
         }
         
         .logout-link {
@@ -292,6 +312,74 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
         .logout-link:hover {
             text-decoration: underline;
         }
+
+        /* Responsive Styles */
+        @media (min-width: 768px) {
+            .admin-container {
+                flex-direction: row;
+            }
+            
+            .sidebar {
+                width: 250px;
+                height: 100vh;
+                position: sticky;
+                top: 0;
+                padding: 20px 0;
+            }
+            
+            .sidebar-menu {
+                display: block;
+                padding: 0;
+            }
+            
+            .sidebar-menu li {
+                margin-bottom: 5px;
+            }
+            
+            .sidebar-menu li a {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+            
+            .header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .form-row {
+                flex-direction: row;
+            }
+            
+            .card {
+                padding: 10px;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .main-content {
+                padding: 30px;
+            }
+            
+            .card {
+                padding: 25px;
+            }
+            
+            .form-control {
+                padding: 10px 15px;
+                font-size: 1rem;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 1rem;
+            }
+            
+            th, td {
+                padding: 12px 15px;
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -304,7 +392,6 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
             <ul class="sidebar-menu">
                 <li><a href="dashboard_admin.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="manage_users.php" class="active"><i class="fas fa-users"></i> Utilisateurs</a></li>
-                <li><a href="#"><i class="fas fa-cog"></i> Paramètres</a></li>
                 <li><a href="logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
             </ul>
         </aside>
@@ -314,7 +401,7 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
             <div class="header">
                 <h1><i class="fas fa-users-cog"></i> Gestion des Utilisateurs</h1>
                 <div class="user-actions">
-                    <span>Bienvenue</span><?php echo $_SESSION['name']; ?>
+                    <span>Bienvenue <?php echo htmlspecialchars($_SESSION['name']); ?></span>
                 </div>
             </div>
 
@@ -353,17 +440,17 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
                         <tbody>
                             <?php foreach ($users as $user): ?>
                             <tr>
-                                <td><?= $user['id'] ?></td>
+                                <td><?= htmlspecialchars($user['id']) ?></td>
                                 <td><?= htmlspecialchars($user['username']) ?></td>
                                 <td class="action-buttons">
                                     <form method="POST" class="edit-form">
-                                        <input type="hidden" name="id" value="<?= $user['id'] ?>">
+                                        <input type="hidden" name="id" value="<?= htmlspecialchars($user['id']) ?>">
                                         <input type="text" class="edit-input" name="username" value="<?= htmlspecialchars($user['username']) ?>" required>
                                         <button type="submit" name="edit_user" class="btn btn-warning btn-sm">
                                             <i class="fas fa-save"></i>
                                         </button>
                                     </form>
-                                    <a href="?delete=<?= $user['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
+                                    <a href="?delete=<?= htmlspecialchars($user['id']) ?>" class="btn btn-danger btn-sm" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
                                         <i class="fas fa-trash-alt"></i>
                                     </a>
                                 </td>

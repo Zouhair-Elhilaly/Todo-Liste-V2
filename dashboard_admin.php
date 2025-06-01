@@ -8,9 +8,7 @@ if (!isset($_SESSION['admin'])) {
 
 $stmt = $pdo->query("SELECT COUNT(*) as count FROM user");
 $count = $stmt->fetch();
-
 ?>
-
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -45,7 +43,7 @@ $count = $stmt->fetch();
             min-height: 100vh;
             line-height: 1.5;
         }
-        
+
         /* Header */
         header {
             background-color: var(--white);
@@ -184,6 +182,70 @@ $count = $stmt->fetch();
             align-items: center;
             gap: 0.5rem;
         }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .header-left h1 {
+                font-size: 1.25rem;
+            }
+            
+            .container {
+                padding: 0 1rem;
+                margin: 1rem auto;
+            }
+            
+            .dashboard-card {
+                padding: 1.5rem;
+            }
+            
+            .stat-value {
+                font-size: 2rem;
+            }
+            
+            .btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            
+            .stat-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+            
+            .stat-value {
+                font-size: 1.75rem;
+            }
+            
+            .dashboard-card h2 {
+                font-size: 1.1rem;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .container {
+                max-width: 1400px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -205,7 +267,7 @@ $count = $stmt->fetch();
                     <i class="fas fa-users"></i>
                 </div> 
                 <div>
-                    <div class="stat-value"><?= $count['count'] ?></div>
+                    <div class="stat-value"><?= htmlspecialchars($count['count']) ?></div>
                     <div class="stat-label">Utilisateurs inscrits</div>
                 </div>
             </div>

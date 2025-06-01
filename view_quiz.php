@@ -84,10 +84,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_quiz'])) {
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Quiz: <?= htmlspecialchars($quiz['title']) ?></title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
         :root {
             --primary-color: #4CAF50;
@@ -100,20 +100,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_quiz'])) {
             --white: #ffffff;
             --transition: all 0.3s ease;
         }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
         body {
             background-color: var(--light-gray);
             color: var(--text-color);
             line-height: 1.6;
         }
-
         .quiz-container {
             max-width: 800px;
             margin: 2rem auto;
@@ -122,23 +119,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_quiz'])) {
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-
         .quiz-header {
             text-align: center;
             margin-bottom: 2rem;
             padding-bottom: 1rem;
             border-bottom: 2px solid var(--primary-light);
         }
-
         .quiz-header h1 {
             color: var(--primary-dark);
             margin-bottom: 0.5rem;
         }
-
         .quiz-header p {
             color: #666;
         }
-
         .quiz-info {
             display: flex;
             justify-content: space-between;
@@ -147,13 +140,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_quiz'])) {
             background-color: var(--light-gray);
             border-radius: 5px;
         }
-
         .quiz-info-item {
             display: flex;
             align-items: center;
             gap: 8px;
         }
-
         .question {
             margin-bottom: 2rem;
             padding: 1.5rem;
@@ -162,7 +153,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_quiz'])) {
             border-radius: 8px;
             position: relative;
         }
-
         .question-number {
             position: absolute;
             top: -12px;
@@ -177,29 +167,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_quiz'])) {
             justify-content: center;
             font-weight: bold;
         }
-
         .question-text {
             font-size: 1.1rem;
             font-weight: 500;
             margin-bottom: 1rem;
         }
-
         .options {
             margin-left: 1.5rem;
         }
-
         .option {
             margin-bottom: 0.8rem;
         }
-
         .option input[type="radio"] {
             margin-right: 10px;
         }
-
         .option label {
             cursor: pointer;
         }
-
         .text-answer {
             width: 100%;
             padding: 10px;
@@ -207,7 +191,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_quiz'])) {
             border-radius: 4px;
             margin-top: 0.5rem;
         }
-
         .btn {
             padding: 10px 20px;
             border: none;
@@ -220,17 +203,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_quiz'])) {
             align-items: center;
             gap: 8px;
         }
-
         .btn-primary {
             background-color: var(--primary-color);
             color: var(--white);
         }
-
         .btn-primary:hover {
             background-color: var(--primary-dark);
             transform: translateY(-2px);
         }
-
         .results {
             margin-top: 2rem;
             padding: 1.5rem;
@@ -238,49 +218,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_quiz'])) {
             border-radius: 8px;
             text-align: center;
         }
-
         .score {
             font-size: 1.5rem;
             font-weight: bold;
             margin-bottom: 1rem;
             color: var(--primary-dark);
         }
-
         .feedback {
             margin-top: 1rem;
             padding: 1rem;
             border-radius: 5px;
         }
-
         .correct {
             background-color: #E8F5E9;
             border-left: 4px solid var(--primary-color);
         }
-
         .incorrect {
             background-color: #FFEBEE;
             border-left: 4px solid var(--error-color);
         }
-
         .explanation {
             font-size: 0.9rem;
             color: #666;
             margin-top: 0.5rem;
             font-style: italic;
         }
-
         .actions {
             display: flex;
             justify-content: space-between;
             margin-top: 2rem;
         }
-
         @media (max-width: 768px) {
             .quiz-container {
                 padding: 1rem;
                 margin: 1rem;
             }
-            
             .quiz-info {
                 flex-direction: column;
                 gap: 1rem;
@@ -322,7 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_quiz'])) {
                     <?php if (!empty($results)): ?>
                         <div class="feedback <?= $results[$question['id']]['is_correct'] ? 'correct' : 'incorrect' ?>">
                             Votre réponse: <?= htmlspecialchars($results[$question['id']]['user_answer']) ?>
-                            <?php if ($question['explanation']): ?>
+                            <?php if (!empty($question['explanation'])): ?>
                                 <div class="explanation"><?= htmlspecialchars($question['explanation']) ?></div>
                             <?php endif; ?>
                         </div>
@@ -337,59 +309,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_quiz'])) {
                                            id="answer_<?= $question['id'] ?>_<?= md5($option) ?>" 
                                            name="answer_<?= $question['id'] ?>" 
                                            value="<?= htmlspecialchars($option) ?>"
-                                           <?= (!empty($results) && $results[$question['id']]['user_answer'] === $option) ? 'checked' : '' ?>
-                                           <?= !empty($results) ? 'disabled' : '' ?>>
-                                    <label for="answer_<?= $question['id'] ?>_<?= md5($option) ?>">
-                                        <?= htmlspecialchars($option) ?>
-                                    </label>
+                                           <?= (isset($results[$question['id']]) && $results[$question['id']]['user_answer'] === $option) ? 'checked' : '' ?> 
+                                           <?= !empty($results) ? 'disabled' : '' ?> />
+                                    <label for="answer_<?= $question['id'] ?>_<?= md5($option) ?>"><?= htmlspecialchars($option) ?></label>
                                 </div>
                             <?php endforeach; ?>
-                            
+                        
                         <?php elseif ($question['question_type'] === 'vrai_faux'): ?>
                             <div class="option">
-                                <input type="radio" 
-                                       id="answer_<?= $question['id'] ?>_true" 
-                                       name="answer_<?= $question['id'] ?>" 
-                                       value="Vrai"
-                                       <?= (!empty($results) && $results[$question['id']]['user_answer'] === 'Vrai') ? 'checked' : '' ?>
-                                       <?= !empty($results) ? 'disabled' : '' ?>>
-                                <label for="answer_<?= $question['id'] ?>_true">Vrai</label>
+                                <input type="radio" id="true_<?= $question['id'] ?>" name="answer_<?= $question['id'] ?>" value="true" 
+                                    <?= (isset($results[$question['id']]) && $results[$question['id']]['user_answer'] === 'true') ? 'checked' : '' ?>
+                                    <?= !empty($results) ? 'disabled' : '' ?> />
+                                <label for="true_<?= $question['id'] ?>">Vrai</label>
                             </div>
                             <div class="option">
-                                <input type="radio" 
-                                       id="answer_<?= $question['id'] ?>_false" 
-                                       name="answer_<?= $question['id'] ?>" 
-                                       value="Faux"
-                                       <?= (!empty($results) && $results[$question['id']]['user_answer'] === 'Faux') ? 'checked' : '' ?>
-                                       <?= !empty($results) ? 'disabled' : '' ?>>
-                                <label for="answer_<?= $question['id'] ?>_false">Faux</label>
+                                <input type="radio" id="false_<?= $question['id'] ?>" name="answer_<?= $question['id'] ?>" value="false" 
+                                    <?= (isset($results[$question['id']]) && $results[$question['id']]['user_answer'] === 'false') ? 'checked' : '' ?>
+                                    <?= !empty($results) ? 'disabled' : '' ?> />
+                                <label for="false_<?= $question['id'] ?>">Faux</label>
                             </div>
-                            
+                        
                         <?php elseif ($question['question_type'] === 'texte_libre'): ?>
-                            <textarea class="text-answer" 
-                                      name="answer_<?= $question['id'] ?>"
-                                      <?= !empty($results) ? 'readonly' : '' ?>
-                                      placeholder="Votre réponse..."><?= !empty($results) ? htmlspecialchars($results[$question['id']]['user_answer']) : '' ?></textarea>
+                            <textarea name="answer_<?= $question['id'] ?>" rows="4" class="text-answer" <?= !empty($results) ? 'readonly' : '' ?>><?= isset($results[$question['id']]) ? htmlspecialchars($results[$question['id']]['user_answer']) : '' ?></textarea>
                         <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>
             
-            <div class="actions">
-                <a href="dashboard_user.php" class="btn">
-                    <i class="fas fa-arrow-left"></i> Retour
-                </a>
-                
-                <?php if (empty($results)): ?>
-                    <button type="submit" name="submit_quiz" class="btn btn-primary">
-                        <i class="fas fa-check-circle"></i> Soumettre le quiz
-                    </button>
-                <?php else: ?>
-                    <a href="view_quiz.php?id=<?= $quiz_id ?>" class="btn btn-primary">
-                        <i class="fas fa-redo"></i> Recommencer
-                    </a>
-                <?php endif; ?>
-            </div>
+            <?php if (empty($results)): ?>
+                <button type="submit" name="submit_quiz" class="btn btn-primary">
+                    <i class="fas fa-check"></i> Soumettre le quiz
+                </button>
+            <?php else: ?>
+                <div class="actions">
+                    <a href="dashboard_user.php" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Retour au tableau</a>
+                    <a href="quiz_generate.php" class="btn btn-primary"><i class="fas fa-plus"></i> Générer un nouveau quiz</a>
+                </div>
+            <?php endif; ?>
         </form>
     </div>
 </body>

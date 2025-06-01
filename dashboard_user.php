@@ -6,6 +6,133 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+
+// start generation quiz 
+
+
+// session_start();
+require 'db.php';
+require 'functions/ai_functions.php'; // Ajoutez cette ligne
+
+if (!isset($_SESSION['user_id'])) {
+    header('Location: index.php');
+    exit();
+}
+
+// Traitement de la génération de quiz
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_quiz'])) {
+    $module_id = $_POST['module_id'];
+    $user_id = $_SESSION['user_id'];
+    $quiz_type = $_POST['quiz_type'];
+    $question_count = isset($_POST['question_count']) ? (int)$_POST['question_count'] : 5;
+
+    try {
+        // Vérification du module
+        $stmt = $pdo->prepare("SELECT id, name FROM module WHERE id = ? AND user_id = ?");
+        $stmt->execute([$module_id, $user_id]);
+        $module = $stmt->fetch();
+        
+        if (!$module) {
+            throw new Exception("Module non trouvé ou non autorisé");
+        }
+
+        // Récupération des notes
+        $stmt = $pdo->prepare("SELECT content FROM note WHERE module_id = ?");
+        $stmt->execute([$module_id]);
+        $notes = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        if (empty($notes)) {
+            throw new Exception("Aucune note trouvée pour ce module");
+        }
+        
+        $module_content = implode("\n", $notes);
+        
+        // Génération du quiz
+        // $quiz_data = generate_quiz_with_ai($module_content, $question_count, $quiz_type);
+        
+        // Enregistrement en base de données
+        $pdo->beginTransaction();
+        
+        // Insertion du quiz
+        $stmt = $pdo->prepare("INSERT INTO quizzes (module_id, user_id, title, quiz_type, generated_at) 
+                              VALUES (?, ?, ?, ?, NOW())");
+        $title = "Quiz {$quiz_type} sur " . $module['name'];
+        $stmt->execute([$module_id, $user_id, $title, $quiz_type]);
+        $quiz_id = $pdo->lastInsertId();
+        
+        // Insertion des questions
+        $stmt = $pdo->prepare("INSERT INTO quiz_questions 
+                              (quiz_id, question, correct_answer, options) 
+                              VALUES (?, ?, ?, ?)");
+        
+        foreach ($quiz_data['questions'] as $question) {
+            $options = ($quiz_type !== 'texte_libre') ? json_encode($question['options']) : null;
+            $stmt->execute([
+                $quiz_id,
+                $question['question'],
+                $question['correct_answer'],
+                $options
+            ]);
+        }
+        
+        $pdo->commit();
+        
+        $_SESSION['success'] = "Quiz généré avec succès!";
+        header("Location: view_quiz.php?id=" . $quiz_id);
+        exit();
+        
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        $_SESSION['error'] = "Erreur: " . $e->getMessage();
+        header("Location: dashboard_user.php");
+        exit();
+    }
+}
+
+// Le reste de votre code reste inchangé...
+
+
+// ********************* end generation quiz *********************
+// Traitement de la génération de quiz
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_quiz'])) {
+    $module_id = $_POST['module_id'];
+    $user_id = $_SESSION['user_id'];
+    $quiz_type = $_POST['quiz_type']; // Récupère le type de quiz
+    $question_count = isset($_POST['question_count']) ? (int)$_POST['question_count'] : 5; // Récupère le nombre de questions
+    
+    try {
+        // Vérifier que le module appartient bien à l'utilisateur
+        $stmt = $pdo->prepare("SELECT id FROM module WHERE id = ? AND user_id = ?");
+        $stmt->execute([$module_id, $user_id]);
+        if (!$stmt->fetch()) {
+            throw new Exception("Module non trouvé ou non autorisé");
+        }
+
+        // Récupérer les notes du module
+        $stmt = $pdo->prepare("SELECT content FROM note WHERE module_id = ?");
+        $stmt->execute([$module_id]);
+        $notes = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        if (empty($notes)) {
+            throw new Exception("Aucune note trouvée pour ce module");
+        }
+        
+        $module_content = implode("\n", $notes);
+        
+        // Appel à l'API IA avec les paramètres
+        $quiz_data = generate_quiz_with_ai($module_content, $question_count, $quiz_type);
+        
+        if (!$quiz_data) {
+            throw new Exception("Échec de la génération du quiz");
+        }
+
+        // Le reste du code reste inchangé...
+    } catch (Exception $e) {
+        
+    }
+}
 // Traitement de la suppression du module
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_module'])) {
     $module_id = $_POST['module_id'];
@@ -62,93 +189,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_module'])) {
 $stmt = $pdo->prepare("SELECT m.id, m.name FROM module m WHERE m.user_id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $modules = $stmt->fetchAll();
-
-// Traitement de la génération de quiz
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_quiz'])) {
-    $module_id = $_POST['module_id'];
-    $user_id = $_SESSION['user_id'];
-    
-    try {
-        // Vérifier que le module appartient bien à l'utilisateur
-        $stmt = $pdo->prepare("SELECT id FROM module WHERE id = ? AND user_id = ?");
-        $stmt->execute([$module_id, $user_id]);
-        if (!$stmt->fetch()) {
-            throw new Exception("Module non trouvé ou non autorisé");
-        }
-
-        // Récupérer les notes du module (table 'not' au lieu de 'notes')
-        $stmt = $pdo->prepare("SELECT content FROM note WHERE module_id = ?");
-        $stmt->execute([$module_id]);
-        $notes = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        if (empty($notes)) {
-            throw new Exception("Aucune note trouvée pour ce module");
-        }
-        
-        $module_content = implode("\n", $notes);
-        
-        // Appel à l'API IA (simulé ici)
-        $quiz_data = generate_quiz_with_ai($module_content);
-        
-        if (!$quiz_data) {
-            throw new Exception("Échec de la génération du quiz");
-        }
-
-        // Démarrer une transaction
-        $pdo->beginTransaction();
-
-        // Insérer le quiz
-        $stmt = $pdo->prepare("INSERT INTO quizzes (module_id, user_id, title, generated_at) VALUES (?, ?, ?, NOW())");
-        $stmt->execute([$module_id, $user_id, "Quiz sur " . $_POST['module_name']]);
-        $quiz_id = $pdo->lastInsertId();
-        
-        // Insérer les questions
-        $stmt = $pdo->prepare("INSERT INTO quiz_questions (quiz_id, question, correct_answer, options) VALUES (?, ?, ?, ?)");
-        
-        foreach ($quiz_data['questions'] as $question) {
-            $options = json_encode($question['options']);
-            $stmt->execute([$quiz_id, $question['question'], $question['correct_answer'], $options]);
-        }
-
-        // Valider la transaction
-        $pdo->commit();
-        
-        $_SESSION['success'] = "Quiz généré avec succès!";
-        header("Location: view_quiz.php?id=" . $quiz_id);
-        exit();
-        
-    } catch (Exception $e) {
-        // Annuler en cas d'erreur
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        $_SESSION['error'] = "Erreur: " . $e->getMessage();
-        header("Location: dashboard_user.php");
-        exit();
-    }
-}
-
-// Fonction pour générer un quiz avec l'IA (simulée)
-function generate_quiz_with_ai($content) {
-    if (empty($content)) {
-        return null;
-    }
-    
-    return [
-        'questions' => [
-            [
-                'question' => "Quel est le concept principal de ce module?",
-                'options' => ["Concept A", "Concept B", "Concept C", "Concept D"],
-                'correct_answer' => "Concept A"
-            ],
-            [
-                'question' => "Quelle est la date importante mentionnée?",
-                'options' => ["2020", "2021", "2022", "2023"],
-                'correct_answer' => "2022"
-            ]
-        ]
-    ];
-}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -579,6 +619,87 @@ function generate_quiz_with_ai($content) {
         </button>
     </div>
 
+    <?php
+// session_start();
+require 'db.php';
+require_once 'functions/ai_functions.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header('Location: index.php');
+    exit();
+}
+
+// Traitement de la suppression du module
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_module'])) {
+    $module_id = $_POST['module_id'];
+    $user_id = $_SESSION['user_id'];
+    
+    try {
+        // Vérifier que le module appartient bien à l'utilisateur
+        $stmt = $pdo->prepare("SELECT id FROM module WHERE id = ? AND user_id = ?");
+        $stmt->execute([$module_id, $user_id]);
+        if (!$stmt->fetch()) {
+            throw new Exception("Module non trouvé ou non autorisé");
+        }
+
+        // Démarrer une transaction
+        $pdo->beginTransaction();
+        
+        // Supprimer les notes liées au module
+        $stmt = $pdo->prepare("DELETE FROM note WHERE module_id = ?");
+        $stmt->execute([$module_id]);
+        
+        // Supprimer les questions des quiz liés au module
+        $stmt = $pdo->prepare("DELETE qq FROM quiz_questions qq 
+                              INNER JOIN quizzes q ON qq.quiz_id = q.id 
+                              WHERE q.module_id = ?");
+        $stmt->execute([$module_id]);
+        
+        // Supprimer les quiz liés au module
+        $stmt = $pdo->prepare("DELETE FROM quizzes WHERE module_id = ?");
+        $stmt->execute([$module_id]);
+        
+        // Supprimer le module
+        $stmt = $pdo->prepare("DELETE FROM module WHERE id = ? AND user_id = ?");
+        $stmt->execute([$module_id, $user_id]);
+        
+        // Valider la transaction
+        $pdo->commit();
+        
+        $_SESSION['success'] = "Module supprimé avec succès!";
+        header("Location: dashboard_user.php");
+        exit();
+        
+    } catch (Exception $e) {
+        // Annuler en cas d'erreur
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        $_SESSION['error'] = "Erreur: " . $e->getMessage();
+        header("Location: dashboard_user.php");
+        exit();
+    }
+}
+
+// Récupération des modules
+$stmt = $pdo->prepare("SELECT m.id, m.name FROM module m WHERE m.user_id = ?");
+$stmt->execute([$_SESSION['user_id']]);
+$modules = $stmt->fetchAll();
+?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- [VOTRE CODE HTML EXISTANT] -->
+</head>
+<body>
+    <!-- [VOTRE CODE HTML EXISTANT] -->
+
+    <script>
+        // [VOTRE CODE JAVASCRIPT EXISTANT]
+    </script>
+</body>
+</html>
+
     <!-- Modal pour la génération de quiz -->
     <div class="quiz-modal" id="quizModal">
         <div class="quiz-modal-content">
@@ -608,7 +729,7 @@ function generate_quiz_with_ai($content) {
                 
                 <div class="form-group">
                     <label for="questionCount">Nombre de questions</label>
-                    <input type="number" name="question_count" id="questionCount" min="1" max="10" value="5">
+                    <input type="number" name="question_count" id="questionCount"  value="5">
                 </div>
                 
                 <button type="submit" name="generate_quiz" class="btn btn-primary">
@@ -618,7 +739,7 @@ function generate_quiz_with_ai($content) {
         </div>
     </div>
 
-    <!-- Modal pour la confirmation de suppression -->
+    <!-- *************       Modal pour la confirmation de suppression ************************* -->
     <div class="delete-modal" id="deleteModal">
         <div class="delete-modal-content">
             <span class="close-modal" id="closeDeleteModal">&times;</span>
@@ -638,6 +759,7 @@ function generate_quiz_with_ai($content) {
     </div>
 
     <script>
+        
         // Gestion du modal quiz
         const quizBtn = document.getElementById('quizGeneratorBtn');
         const quizModal = document.getElementById('quizModal');

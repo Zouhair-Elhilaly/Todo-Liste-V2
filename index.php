@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Set "remember me" cookie if checked
         if ($remember_me) {
-            setcookie('remember_username', $username, time() + (86400 * 30), "/");
+            setcookie('remember_username', $username, time() + 2000 , "/");
         } else {
             setcookie('remember_username', '', time() - 3600, "/");
         }
@@ -373,17 +373,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
+        .title{
+            font-family:  serif;
+        }
 </style>
     <header>
         <nav class="navbar">
             <a href="index.php" class="logo">
                 <i class="fas fa-leaf"></i>
-                <span>MonSite</span>
+                <span class="title">Todo List</span>
             </a>
             <div class="nav-links">
                 <a href="index.php">Accueil</a>
-                <a href="about.php">À propos</a>
-                <a href="contact.php">Contact</a>
+                <!-- <a href="about.php">À propos</a> -->
+                <!-- <a href="contact.php">Contact</a> -->
             </div>
         </nav>
     </header>
@@ -440,7 +443,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <a href="#"><i class="fab fa-linkedin-in"></i></a>
             </div>
             <p class="copyright">
-                &copy; <?= date('Y') ?> MonSite. Tous droits réservés.
+                &copy; <?= date('Y') ?> Todo List.
             </p>
         </div>
     </footer>
