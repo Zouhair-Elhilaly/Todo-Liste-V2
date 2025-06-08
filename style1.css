@@ -55,6 +55,11 @@
     align-items: center;
     font-size: 18px;
   }
+
+  #chatbot-header b{
+    color: black;
+    text-shadow: 0 0 10px #c6d0c693;
+  }
   
   #close-btn {
     background: none;
@@ -129,3 +134,5 @@
   #send-btn:hover {
     background-color: #b71c1c;
   }
+
+ 

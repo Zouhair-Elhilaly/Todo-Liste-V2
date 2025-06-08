@@ -3,6 +3,7 @@ session_start();
 require 'db.php';
 //require_once 'functions/ai_functions.php'; // Keep this if you use other AI functions elsewhere
 
+// 2ieme condition
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit();
@@ -24,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_module'])) {
            // Démarrer une transaction
         $pdo->beginTransaction();
         
-        // Supprimer les notes liées au module
+        // **********************   Supprimer les notes liées au module
         $stmt = $pdo->prepare("DELETE FROM note WHERE module_id = ?");
         $stmt->execute([$module_id]);
 
@@ -137,6 +138,7 @@ $modules = $stmt->fetchAll();
             gap: 8px;
         }
 
+        
         .btn-primary {
             background-color: var(--primary-color);
             color: var(--white);
@@ -195,7 +197,7 @@ $modules = $stmt->fetchAll();
 
         .module-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 15px black;
         }
 
         .module-name {
@@ -551,11 +553,16 @@ $modules = $stmt->fetchAll();
     <title>ChatBot</title>
     <link rel="stylesheet" href="style1.css" />
   </head>
+  <!-- start recupure name -->
+        <!-- < $stmt = $pdo->prepare("SELECT * FROM user WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $user = $stmt->fetch(); ?> -->
+<!-- end  -->
   <body>
     <div id="chatbot-icon"><i class="fa-solid fa-brain"></i></div>
     <div id="chatbot-container" class="hidden">
       <div id="chatbot-header">
-        <span>Chat with ai </span>
+        <span class="title-ai">Chat with ai <b><?= htmlspecialchars($_SESSION['name'] ) ?></b></span>
         <button id="close-btn">&times;</button>
       </div>
       <div id="chatbot-body">
@@ -614,7 +621,7 @@ function appendMessage(sender, message) {
 }
 
 async function getBotResponse(userMessage) {
-  const API_KEY = "AIzaSyCw7Phve7Gu42MaJK29uHj41TgYBpkce5c";  // create API key
+  const API_KEY = "AIzaSyCw7Phve7Gu42MaJK29uHj41TgYBpkce5c";  //
   const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 
   try {

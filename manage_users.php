@@ -154,8 +154,14 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
             gap: 10px;
             align-items: center;
             font-size: 0.9rem;
+            background-color: var(--text-color);
+            color: white;
+            font-weight: bold;
+            padding: 8px 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px green;
+            cursor: pointer;
         }
-        
         .card {
             background-color: var(--white);
             border-radius: 6px;
@@ -401,7 +407,7 @@ $users = $pdo->query("SELECT * FROM user")->fetchAll();
             <div class="header">
                 <h1><i class="fas fa-users-cog"></i> Gestion des Utilisateurs</h1>
                 <div class="user-actions">
-                    <span>Bienvenue <?php echo htmlspecialchars($_SESSION['name']); ?></span> 
+                    <span title="Profil Admin"><i class="fa-solid fa-user"></i>  <?php echo htmlspecialchars($_SESSION['name']); ?></span> 
                 </div>
             </div>
 
